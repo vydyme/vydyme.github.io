@@ -1,0 +1,13 @@
+{
+  "name": "vydyme.github.io",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "preview": "npm run build && npx --yes serve dist -l 3000"
+  },
+  "dependencies": {
+    "sharp": "^0.35.3",
+    "yaml": "^2.9.0"
+  }
+}
