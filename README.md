@@ -79,6 +79,27 @@ Keep captions short — around 200 characters reads best under the photo. The
 location line only shows the fields you provide (e.g. just "Rotterdam,
 Netherlands" if you skip the venue).
 
+### Adding camera/shot details (optional)
+
+Add any of `camera`, `lens`, `aperture`, `mm`, `shutter`, `iso` to a photo's
+entry and they render as a technical line under the location, e.g. "Fujifilm
+X100V · 23mm f/2 · 1/500s · ISO 400":
+
+```yaml
+IMG_0001.jpg:
+  camera: Fujifilm X100V
+  lens: Fujinon 23mm f/2
+  aperture: 2
+  mm: 23
+  shutter: 1/500
+  iso: 400
+```
+
+`aperture`, `mm`, and `shutter` accept plain numbers/fractions (`2`, `23`,
+`1/500`) and are formatted to `f/2`, `23mm`, and `1/500s` automatically — you
+can also write them pre-formatted yourself and they're left as-is. Every
+field is optional and omitted fields just don't appear in the line.
+
 ### What the build does automatically
 
 - Generates a square grid thumbnail and a web-optimized full-size version of

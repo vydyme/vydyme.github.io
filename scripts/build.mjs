@@ -70,6 +70,35 @@ function locationLine({ venue, city, country, date }) {
   return [place, formatDate(date)].filter(Boolean).join(" · ");
 }
 
+function formatAperture(value) {
+  if (!value) return "";
+  const str = String(value).trim();
+  return /^f\//i.test(str) ? str : `f/${str}`;
+}
+
+function formatFocal(value) {
+  if (!value) return "";
+  const str = String(value).trim();
+  return /mm$/i.test(str) ? str : `${str}mm`;
+}
+
+function formatShutter(value) {
+  if (!value) return "";
+  const str = String(value).trim();
+  return /s$/i.test(str) ? str : `${str}s`;
+}
+
+function formatIso(value) {
+  if (!value) return "";
+  const str = String(value).trim();
+  return /^iso/i.test(str) ? str : `ISO ${str}`;
+}
+
+function exifLine({ camera, lens, mm, aperture, shutter, iso }) {
+  const focalAperture = [formatFocal(mm), formatAperture(aperture)].filter(Boolean).join(" ");
+  return [camera, lens, focalAperture, formatShutter(shutter), formatIso(iso)].filter(Boolean).join(" · ");
+}
+
 function readPhotosInDir(dirPath, files) {
   const captions = readCaptions(dirPath);
   const captionsByLowerName = Object.fromEntries(
@@ -86,6 +115,12 @@ function readPhotosInDir(dirPath, files) {
       city: meta.city || "",
       venue: meta.venue || "",
       date: meta.date || "",
+      camera: meta.camera || "",
+      lens: meta.lens || "",
+      aperture: meta.aperture || "",
+      mm: meta.mm || "",
+      shutter: meta.shutter || "",
+      iso: meta.iso || "",
       caption: meta.caption || "",
     };
   });
@@ -205,11 +240,13 @@ function renderPhotoBody(category, photo, total) {
   const prev = category.photos[(photo.index - 2 + total) % total];
   const next = category.photos[photo.index % total];
   const location = locationLine(photo);
+  const exif = exifLine(photo);
   const alt = photo.caption || `${category.displayName || SITE_TITLE} photo ${photo.index}`;
 
-  const caption = (location || photo.caption) ? `
+  const caption = (location || exif || photo.caption) ? `
     <div class="photo-caption">
       ${location ? `<div class="photo-caption__location">${escapeHtml(location)}</div>` : ""}
+      ${exif ? `<div class="photo-caption__exif">${escapeHtml(exif)}</div>` : ""}
       ${photo.caption ? `<p class="photo-caption__text">${escapeHtml(photo.caption)}</p>` : ""}
     </div>` : "";
 

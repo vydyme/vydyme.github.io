@@ -254,6 +254,13 @@ a {
   margin-bottom: 0.5rem;
 }
 
+.photo-caption__exif {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
 .photo-caption__text {
   font-size: 0.95rem;
   line-height: 1.5;
