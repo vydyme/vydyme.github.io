@@ -70,6 +70,27 @@ function locationLine({ venue, city, country, date }) {
   return [place, formatDate(date)].filter(Boolean).join(" · ");
 }
 
+function readPhotosInDir(dirPath, files) {
+  const captions = readCaptions(dirPath);
+  const captionsByLowerName = Object.fromEntries(
+    Object.entries(captions).map(([name, meta]) => [name.toLowerCase(), meta])
+  );
+
+  return files.map((file, i) => {
+    const meta = captionsByLowerName[file.toLowerCase()] || {};
+    return {
+      index: i + 1,
+      srcPath: path.join(dirPath, file),
+      srcFile: file,
+      country: meta.country || "",
+      city: meta.city || "",
+      venue: meta.venue || "",
+      date: meta.date || "",
+      caption: meta.caption || "",
+    };
+  });
+}
+
 function readCategories() {
   if (!existsSync(PHOTOS_DIR)) return [];
 
@@ -82,10 +103,6 @@ function readCategories() {
     const files = readdirSync(dirPath)
       .filter((f) => IMAGE_EXTENSIONS.has(path.extname(f).toLowerCase()))
       .sort(collator.compare);
-    const captions = readCaptions(dirPath);
-    const captionsByLowerName = Object.fromEntries(
-      Object.entries(captions).map(([name, meta]) => [name.toLowerCase(), meta])
-    );
 
     return {
       folderName: entry.name,
@@ -93,25 +110,35 @@ function readCategories() {
       displayName,
       slug: slugify(displayName),
       order,
-      photos: files.map((file, i) => {
-        const meta = captionsByLowerName[file.toLowerCase()] || {};
-        return {
-          index: i + 1,
-          srcPath: path.join(dirPath, file),
-          srcFile: file,
-          country: meta.country || "",
-          city: meta.city || "",
-          venue: meta.venue || "",
-          date: meta.date || "",
-          caption: meta.caption || "",
-        };
-      }),
+      photos: readPhotosInDir(dirPath, files),
     };
   });
 
   return categories
     .filter((c) => c.photos.length > 0)
     .sort((a, b) => (a.order - b.order) || collator.compare(a.displayName, b.displayName));
+}
+
+// Photos dropped directly in photos/ (not inside a category subfolder) have
+// no nav label of their own and are shown uncategorized on the homepage.
+function readRootPhotos() {
+  if (!existsSync(PHOTOS_DIR)) return null;
+
+  const files = readdirSync(PHOTOS_DIR, { withFileTypes: true })
+    .filter((e) => e.isFile() && IMAGE_EXTENSIONS.has(path.extname(e.name).toLowerCase()))
+    .map((e) => e.name)
+    .sort(collator.compare);
+
+  if (files.length === 0) return null;
+
+  return {
+    folderName: "",
+    dirPath: PHOTOS_DIR,
+    displayName: "",
+    slug: "",
+    order: -Infinity,
+    photos: readPhotosInDir(PHOTOS_DIR, files),
+  };
 }
 
 function escapeHtml(str) {
@@ -156,26 +183,29 @@ function renderPage({ title, description, activeSlug, categories, body, bodyClas
 }
 
 function renderGridBody(category) {
+  const base = category.slug ? `${category.slug}/` : "";
   const tiles = category.photos.map((p) => {
-    const alt = p.caption || `${category.displayName} photo ${p.index}`;
+    const alt = p.caption || `${category.displayName || SITE_TITLE} photo ${p.index}`;
     return `
-      <a class="grid__item" href="/${category.slug}/${p.index}.html">
-        <img src="/assets/${category.slug}/thumb/${p.index}.jpg" alt="${escapeHtml(alt)}" loading="lazy">
+      <a class="grid__item" href="/${base}${p.index}.html">
+        <img src="/assets/${base}thumb/${p.index}.jpg" alt="${escapeHtml(alt)}" loading="lazy">
         <span class="grid__corner grid__corner--tl" aria-hidden="true"></span>
         <span class="grid__corner grid__corner--br" aria-hidden="true"></span>
       </a>`;
   }).join("");
 
-  return `<h1 class="category-title">${escapeHtml(category.displayName)}</h1>
+  const title = category.displayName ? `<h1 class="category-title">${escapeHtml(category.displayName)}</h1>` : "";
+  return `${title}
     <div class="grid">${tiles}
     </div>`;
 }
 
 function renderPhotoBody(category, photo, total) {
+  const base = category.slug ? `${category.slug}/` : "";
   const prev = category.photos[(photo.index - 2 + total) % total];
   const next = category.photos[photo.index % total];
   const location = locationLine(photo);
-  const alt = photo.caption || `${category.displayName} photo ${photo.index}`;
+  const alt = photo.caption || `${category.displayName || SITE_TITLE} photo ${photo.index}`;
 
   const caption = (location || photo.caption) ? `
     <div class="photo-caption">
@@ -185,15 +215,15 @@ function renderPhotoBody(category, photo, total) {
 
   return `<div class="photo-view">
       <div class="photo-view__frame">
-        <img class="photo-view__image" src="/assets/${category.slug}/full/${photo.index}.jpg" alt="${escapeHtml(alt)}">
+        <img class="photo-view__image" src="/assets/${base}full/${photo.index}.jpg" alt="${escapeHtml(alt)}">
         <span class="photo-view__corner photo-view__corner--tl" aria-hidden="true"></span>
         <span class="photo-view__corner photo-view__corner--br" aria-hidden="true"></span>
       </div>
     </div>
     <div class="photo-nav">
-      <a class="photo-nav__arrow photo-nav__arrow--prev" href="/${category.slug}/${prev.index}.html" aria-label="Previous photo">&#8249;</a>
+      <a class="photo-nav__arrow photo-nav__arrow--prev" href="/${base}${prev.index}.html" aria-label="Previous photo">&#8249;</a>
       <span class="photo-nav__counter">${photo.index} / ${total}</span>
-      <a class="photo-nav__arrow photo-nav__arrow--next" href="/${category.slug}/${next.index}.html" aria-label="Next photo">&#8250;</a>
+      <a class="photo-nav__arrow photo-nav__arrow--next" href="/${base}${next.index}.html" aria-label="Next photo">&#8250;</a>
     </div>${caption}`;
 }
 
@@ -233,14 +263,45 @@ function copyStaticFiles() {
   }
 }
 
+function photoPageTitle(category, photo) {
+  return category.displayName
+    ? `${category.displayName} #${photo.index} — ${SITE_TITLE}`
+    : `${SITE_TITLE} #${photo.index}`;
+}
+
+function photoPageDescription(category, photo) {
+  if (photo.caption) return photo.caption;
+  const suffix = category.displayName
+    ? `${category.displayName}, street photography by ${SITE_TITLE}.`
+    : `Street photography by ${SITE_TITLE}.`;
+  const location = locationLine(photo);
+  return location ? `${location} — ${suffix}` : suffix;
+}
+
+async function writePhotoPages(category, categories, outDir) {
+  const total = category.photos.length;
+  for (const photo of category.photos) {
+    const html = renderPage({
+      title: photoPageTitle(category, photo),
+      description: photoPageDescription(category, photo),
+      activeSlug: category.slug,
+      categories,
+      body: renderPhotoBody(category, photo, total),
+      bodyClass: "photo-page",
+    });
+    await writeFile(path.join(outDir, `${photo.index}.html`), html);
+  }
+}
+
 async function build() {
   rmSync(DIST_DIR, { recursive: true, force: true });
   mkdirSync(DIST_DIR, { recursive: true });
   copyStaticFiles();
 
   const categories = readCategories();
+  const rootCategory = readRootPhotos();
 
-  if (categories.length === 0) {
+  if (categories.length === 0 && !rootCategory) {
     const html = renderPage({
       title: SITE_TITLE,
       description: "Street photography.",
@@ -268,26 +329,18 @@ async function build() {
     const catDir = path.join(DIST_DIR, category.slug);
     mkdirSync(catDir, { recursive: true });
     await writeFile(path.join(catDir, "index.html"), gridHtml);
-
-    const total = category.photos.length;
-    for (const photo of category.photos) {
-      const photoLocation = locationLine(photo);
-      const photoDescription = photo.caption
-        || (photoLocation ? `${photoLocation} — ${category.displayName}, street photography by ${SITE_TITLE}.` : `${category.displayName} — street photography by ${SITE_TITLE}.`);
-      const photoHtml = renderPage({
-        title: `${category.displayName} #${photo.index} — ${SITE_TITLE}`,
-        description: photoDescription,
-        activeSlug: category.slug,
-        categories,
-        body: renderPhotoBody(category, photo, total),
-        bodyClass: "photo-page",
-      });
-      await writeFile(path.join(catDir, `${photo.index}.html`), photoHtml);
-    }
+    await writePhotoPages(category, categories, catDir);
   }
 
-  // Homepage mirrors the first category's grid.
-  const home = categories[0];
+  // Photos dropped directly in photos/ (no subfolder) have no nav tab of
+  // their own and live at the site root instead of under a category slug.
+  if (rootCategory) {
+    await processImages(rootCategory);
+    await writePhotoPages(rootCategory, categories, DIST_DIR);
+  }
+
+  // Homepage: uncategorized root photos take priority, otherwise mirror the first category.
+  const home = rootCategory || categories[0];
   const homeHtml = renderPage({
     title: SITE_TITLE,
     description: `Street photography by ${SITE_TITLE}.`,
@@ -297,7 +350,8 @@ async function build() {
   });
   await writeFile(path.join(DIST_DIR, "index.html"), homeHtml);
 
-  console.log(`Built ${categories.length} categories, ${categories.reduce((n, c) => n + c.photos.length, 0)} photos.`);
+  const totalPhotos = categories.reduce((n, c) => n + c.photos.length, 0) + (rootCategory ? rootCategory.photos.length : 0);
+  console.log(`Built ${categories.length} categories, ${totalPhotos} photos.`);
 }
 
 build().catch((err) => {

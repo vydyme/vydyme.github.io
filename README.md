@@ -30,6 +30,21 @@ and rebuilds itself automatically whenever you push photos.
   chronologically).
 - Supported formats: `.jpg`, `.jpeg`, `.png`, `.webp`.
 
+### Uncategorized photos
+
+Photos placed directly in `photos/` (not inside a subfolder) don't get a nav
+tab — they show up straight on the homepage instead:
+
+```
+photos/
+  IMG_9000.jpg          <- shows on the homepage, no category
+  01 - Street/
+    IMG_0001.jpg        <- shows under the "Street" nav tab
+```
+
+A `captions.yaml` at the `photos/` root works the same way as inside a
+category folder.
+
 ### Adding location and captions (optional)
 
 Drop a `captions.yaml` file inside a category folder, keyed by the image
