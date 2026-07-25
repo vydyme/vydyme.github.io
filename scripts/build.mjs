@@ -212,6 +212,7 @@ function renderPage({ title, description, activeSlug, categories, body, bodyClas
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
+<link rel="icon" href="/favicon.png" type="image/png">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body class="${bodyClass || ""}">
@@ -303,7 +304,7 @@ async function processImages(category) {
 }
 
 function copyStaticFiles() {
-  for (const file of ["styles.css", "script.js", "logo.png"]) {
+  for (const file of ["styles.css", "script.js", "logo.png", "favicon.png"]) {
     copyFileSync(path.join(SITE_DIR, file), path.join(DIST_DIR, file));
   }
 }
