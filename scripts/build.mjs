@@ -193,6 +193,14 @@ function renderNav(categories, activeSlug) {
     <nav class="nav">
       ${links}
     </nav>
+    <div class="site-social">
+      <a class="site-social__link" href="https://www.instagram.com/vydy.me" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a class="site-social__link" href="mailto:contact.vydyme@gmail.com" aria-label="Email">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="M3.5 6.5l8.5 7 8.5-7"/></svg>
+      </a>
+    </div>
   </header>`;
 }
 

@@ -69,6 +69,22 @@ a {
   border-bottom-color: var(--fg);
 }
 
+.site-social {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.site-social__link {
+  display: flex;
+  color: var(--muted);
+}
+
+.site-social__link:hover {
+  color: var(--fg);
+}
+
 /* Category grid (Instagram-style) */
 
 .category-title {
